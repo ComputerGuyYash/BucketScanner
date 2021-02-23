@@ -85,21 +85,16 @@ class Settings(object):
 
 
 def get_region(bucket_name):
-    try:
-        response = requests.get('http://' + bucket_name + '.s3.amazonaws.com/')
-        region = response.headers.get('x-amz-bucket-region')
-        return region
-    except Exception as e:
-        print "Error: couldn't connect to '{0}' bucket. Details: {1}".format(response, e)
+    return "eu-central-1"
 
 
 def get_session(bucket_name, region):
     try:
         if settings._ANONYMOUS_MODE:
-            sess = boto3.session.Session(region_name=region)
+            sess = boto3.session.Session(endpoint_url="https://s3.eu-central-1.wasabisys.com/")
         else:
             sess = boto3.session.Session(
-                region_name=region,
+                endpoint_url="https://s3.eu-central-1.wasabisys.com/",
                 aws_access_key_id=AWS_ACCESS_KEY_ID,
                 aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
         conn = sess.resource('s3')
@@ -116,7 +111,7 @@ def get_bucket(bucket_name):
     if region == 'None':
         print "Bucket '{0}' does not exist.".format(bucket_name.encode('utf-8'))
     else:
-        bucket = get_session(bucket_name, region)
+        bucket = get_session(bucket_name, endpoint_url="https://s3.eu-central-1.wasabisys.com/")
     return bucket
 
 
@@ -149,8 +144,7 @@ def bucket_reader(bucket_name):
                     if is_in_limits(settings._MIN_SIZE, settings._MAX_SIZE, content_length) and \
                             re.match(settings._REGEX, s3_object.key):
 
-                        item = "http://s3.{0}.amazonaws.com/{1}/{2}".format(
-                            region, bucket_name,
+                        item = "https://s3.eu-central-1.wasabisys.com/{0}".format(
                             s3_object.key.encode('utf-8'))
                         results += item + '\n'
                         print "Collectable: {0} {1}".format(item, size(content_length))
@@ -172,9 +166,7 @@ def write_test(bucket_name, filename):
             bucket = get_bucket(bucket_name)
             bucket.put_object(Bucket=bucket_name, Key=filename, Body=data)
             print "Success: bucket '{0}' allows for uploading arbitrary files!!!".format(bucket_name.encode('utf-8'))
-            results = "http://s3.{0}.amazonaws.com/{1}/{2}\n".format(region,
-                                                                     bucket_name,
-                                                                     filename)
+            results = filename
             append_output(results)
         except Exception as e:
             print "Error: couldn't upload a {0} file to {1}. Details: {2}\n".format(filename,
